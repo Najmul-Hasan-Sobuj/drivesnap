@@ -1,0 +1,57 @@
+{
+  "name": "najmul-hasan-sobuj/drivesnap",
+  "description": "Encrypted Google Drive database backups with a portable Inertia dashboard for Laravel.",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "laravel",
+    "inertia",
+    "backup",
+    "google-drive",
+    "drivesnap"
+  ],
+  "homepage": "https://github.com/Najmul-Hasan-Sobuj/drivesnap",
+  "authors": [
+    {
+      "name": "Najmul Hasan",
+      "homepage": "https://github.com/Najmul-Hasan-Sobuj"
+    }
+  ],
+  "require": {
+    "php": "^8.3",
+    "ext-sodium": "*",
+    "ext-pdo": "*",
+    "illuminate/support": "^12.0|^13.0",
+    "illuminate/database": "^12.0|^13.0",
+    "illuminate/http": "^12.0|^13.0",
+    "illuminate/queue": "^12.0|^13.0",
+    "inertiajs/inertia-laravel": "^2.0|^3.0"
+  },
+  "require-dev": {
+    "orchestra/testbench": "^10.0|^11.0",
+    "phpunit/phpunit": "^12.0|^13.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "DriveSnap\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "DriveSnap\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "DriveSnap\\DriveSnapServiceProvider"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "phpunit"
+  },
+  "config": {
+    "sort-packages": true
+  }
+}

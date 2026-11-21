@@ -1,1 +1,8 @@
-L3ZlbmRvci8KL25vZGVfbW9kdWxlcy8KLy5waHB1bml0LmNhY2hlLwovLnBocHVuaXQucmVzdWx0LmNhY2hlCi8uZW52Ci8uZW52LioKL2NvdmVyYWdlLwovY29tcG9zZXIubG9jawo=
+/vendor/
+/node_modules/
+/.phpunit.cache/
+/.phpunit.result.cache
+/.env
+/.env.*
+/coverage/
+/composer.lock
