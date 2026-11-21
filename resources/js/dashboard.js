@@ -286,7 +286,11 @@ export function mountDashboard(root, initial) {
             confirmDialog.close();
             await refresh();
         } catch (error) {
-            if (!disposed) notice(error.message, true);
+            if (!disposed) {
+                createDialog.close();
+                confirmDialog.close();
+                notice(error.message, true);
+            }
         } finally {
             busy = false;
             if (!disposed) {

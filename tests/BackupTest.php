@@ -116,4 +116,11 @@ class BackupTest extends TestCase
         $this->postJson('/drivesnap/backups', ['upload_to_drive' => false])->assertAccepted();
         Bus::assertDispatched(CreateBackup::class);
     }
+
+    public function test_last_backup_timestamp_has_an_explicit_timezone(): void
+    {
+        $backup = Backup::create(['status' => 'completed', 'completed_at' => '2026-11-21 12:25:32']);
+        $this->actingAs($this->actor())->getJson('/drivesnap/status')->assertOk()
+            ->assertJsonPath('stats.last_completed_at', $backup->completed_at->toJSON());
+    }
 }
