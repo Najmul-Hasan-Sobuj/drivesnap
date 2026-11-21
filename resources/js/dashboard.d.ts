@@ -15,6 +15,7 @@ export type BackupRow = {
     retry_url: string;
 };
 export type DashboardData = {
+    feedback?: { message: string | null; error: boolean };
     backups: {
         data: BackupRow[];
         current_page: number;

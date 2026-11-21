@@ -52,7 +52,10 @@ class DashboardController
             'retry_url' => route('drivesnap.retry', $backup, false),
         ]);
 
+        $error = $request->session()->get('errors')?->first('drivesnap');
+
         return [
+            'feedback' => ['message' => $error ?: $request->session()->get('success'), 'error' => filled($error)],
             'backups' => $backups,
             'stats' => ['completed' => Backup::where('status', 'completed')->count(), 'failed' => Backup::where('status', 'failed')->count(),
                 'bytes' => (int) Backup::where('status', 'completed')->sum('size'), 'last_completed_at' => Backup::where('status', 'completed')->latest('completed_at')->value('completed_at')],

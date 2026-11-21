@@ -375,6 +375,9 @@ export function mountDashboard(root, initial) {
         );
     });
     render();
+    if (initial.feedback?.message) {
+        notice(initial.feedback.message, initial.feedback.error);
+    }
     const timer = setInterval(() => {
         if (
             !document.hidden &&

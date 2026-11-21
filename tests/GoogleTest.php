@@ -137,4 +137,15 @@ class GoogleTest extends TestCase
         $this->assertNull($connection->fresh()->access_token);
         $this->assertFalse($connection->fresh()->schedule_enabled);
     }
+
+    public function test_cancelled_google_authorization_returns_visible_dashboard_feedback(): void
+    {
+        Http::fake();
+        $this->actingAs($this->actor())->withSession(['drivesnap.oauth' => ['state' => 'cancel-state', 'expires' => now()->addMinute()->getTimestamp()]])
+            ->get('/drivesnap/google/callback?state=cancel-state&error=access_denied')->assertRedirect('/drivesnap');
+        $this->getJson('/drivesnap/status')->assertOk()
+            ->assertJsonPath('feedback.message', 'Google authorization was cancelled.')
+            ->assertJsonPath('feedback.error', true);
+        Http::assertNothingSent();
+    }
 }
