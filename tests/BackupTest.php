@@ -103,4 +103,17 @@ class BackupTest extends TestCase
         $this->assertSame('বাংলা restore sample', DB::connection('source')->table('probe')->value('value'));
         DB::purge('source');
     }
+
+    public function test_downloading_archives_does_not_consume_the_creation_rate_limit(): void
+    {
+        Bus::fake();
+        Storage::disk('drivesnap')->put('backups/rate.enc', 'archive');
+        $backup = Backup::create(['status' => 'completed', 'path' => 'backups/rate.enc', 'sha256' => hash('sha256', 'archive')]);
+        $this->actingAs($this->actor());
+        foreach (range(1, 3) as $number) {
+            $this->get('/drivesnap/backups/'.$backup->id.'/download')->assertDownload();
+        }
+        $this->postJson('/drivesnap/backups', ['upload_to_drive' => false])->assertAccepted();
+        Bus::assertDispatched(CreateBackup::class);
+    }
 }
