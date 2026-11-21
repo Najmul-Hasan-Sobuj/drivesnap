@@ -10,6 +10,8 @@ export type BackupRow = {
     completed_at: string | null;
     local: boolean;
     remote: boolean;
+    local_path: string | null;
+    drive_url: string | null;
     download_url: string;
     delete_url: string;
     retry_url: string;
@@ -48,6 +50,7 @@ export type DashboardData = {
         last_completed_at: string | null;
     };
     connection: {
+        folder_url: string | null;
         connected: boolean;
         configured: boolean;
         revoke_on_disconnect: boolean;

@@ -7,6 +7,7 @@ Supports Laravel 12/13, Inertia Laravel 2/3, PHP 8.3+, and Vue 3, React, or Svel
 ## What you get
 
 - A responsive dashboard: history, progress, encrypted downloads, retries, deletion, daily scheduling and retention.
+- Backup locations: copy a project-relative local archive path and open its Google Drive file/folder.
 - Local encrypted copies, with optional Google Drive copies using resumable uploads.
 - Streaming XChaCha20-Poly1305 encryption and archive checksums; bounded memory for large archives.
 - Explicit server-side permissions, encrypted OAuth credentials, single-use OAuth state and private storage.
@@ -150,6 +151,12 @@ php artisan drivesnap:prune
 Retention removes completed backups older than the selected number of days, always preserving the newest completed backup. It pauses if that newest backup is inaccessible. Remote deletion must succeed before its local copy and record are removed.
 
 MySQL/MariaDB require a compatible `mysqldump`/`mariadb-dump` binary and sufficient database privileges. Configure `backup_binary` or `DRIVESNAP_DUMP_BINARY` if necessary. Passwords are passed through a private temporary options file, not process arguments. Transactional-table consistency uses `--single-transaction`; avoid schema changes while a dump runs. SQLite uses `VACUUM INTO`. Set `connection`/`DRIVESNAP_DB_CONNECTION` to select another configured database.
+
+## Find your backup files
+
+Users with the download ability can select **View locations** in a completed backup's Storage column. The dialog shows the existing local archive's path relative to the Laravel project, offers **Copy path** and **Download encrypted**, and links to the completed Google Drive copy. The Drive card also has **Open Drive folder** after the first upload creates a folder.
+
+Local paths refer to the **application server**, not the browser's computer. Browsers cannot open that server's file manager; use your deployment's file manager or SSH for server access. Absolute server paths, OAuth tokens and upload sessions are never exposed. View-only users receive no location paths or Drive links. Missing local copies can be retrieved through the authorized download action. Drive links require access in the owning Google account and do not change sharing permissions; the page records uploaded copies, not a live check for files moved/deleted directly in Drive. Archives remain encrypted and cannot be previewed as documents.
 
 ## Encryption and recovery
 

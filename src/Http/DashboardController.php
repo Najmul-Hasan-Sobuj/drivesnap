@@ -45,15 +45,25 @@ class DashboardController
     {
         $request->validate(['page' => ['nullable', 'integer', 'min:1']]);
         $connection = Connection::find(1);
+        $canLocate = Authorization::allows($request->user(config('drivesnap.guard')), 'download');
         $backups = Backup::latest('created_at')->orderByDesc('id')->paginate(10);
-        $backups->through(fn (Backup $backup): array => [
-            ...$backup->only(['id', 'status', 'driver', 'size', 'uploaded_bytes', 'upload_to_drive', 'error_code', 'created_at', 'completed_at']),
-            'local' => $backup->path && Storage::disk('drivesnap')->exists($backup->path),
-            'remote' => $backup->drive_file_id !== null && $backup->status === 'completed',
-            'download_url' => route('drivesnap.download', $backup, false),
-            'delete_url' => route('drivesnap.destroy', $backup, false),
-            'retry_url' => route('drivesnap.retry', $backup, false),
-        ]);
+        $backups->through(function (Backup $backup) use ($canLocate): array {
+            $local = $backup->path && Storage::disk('drivesnap')->exists($backup->path);
+            $completed = $backup->status === 'completed';
+
+            return [
+                ...$backup->only(['id', 'status', 'driver', 'size', 'uploaded_bytes', 'upload_to_drive', 'error_code', 'created_at', 'completed_at']),
+                'local' => $local,
+                'local_path' => $canLocate && $completed && $local && $backup->path === 'backups/'.$backup->id.'.enc'
+                    ? 'storage/app/private/drivesnap/'.$backup->path : null,
+                'drive_url' => $canLocate && $completed && $backup->drive_file_id
+                    ? 'https://drive.google.com/file/d/'.rawurlencode($backup->drive_file_id).'/view' : null,
+                'remote' => $backup->drive_file_id !== null && $backup->status === 'completed',
+                'download_url' => route('drivesnap.download', $backup, false),
+                'delete_url' => route('drivesnap.destroy', $backup, false),
+                'retry_url' => route('drivesnap.retry', $backup, false),
+            ];
+        });
 
         $error = $request->session()->get('errors')?->first('drivesnap');
 
@@ -67,7 +77,7 @@ class DashboardController
             'backups' => $backups,
             'stats' => ['completed' => Backup::where('status', 'completed')->count(), 'failed' => Backup::where('status', 'failed')->count(),
                 'bytes' => (int) Backup::where('status', 'completed')->sum('size'), 'last_completed_at' => Backup::where('status', 'completed')->latest('completed_at')->value('completed_at')],
-            'connection' => ['connected' => $connection?->connected() ?? false, 'email' => $connection?->email,
+            'connection' => ['folder_url' => $canLocate && $connection?->folder_id ? 'https://drive.google.com/drive/folders/'.rawurlencode($connection->folder_id) : null, 'connected' => $connection?->connected() ?? false, 'email' => $connection?->email,
                 'revoke_on_disconnect' => (bool) config('drivesnap.revoke_on_disconnect', true),
                 'configured' => (bool) config('drivesnap.client_id') && (bool) config('drivesnap.client_secret'),
                 'schedule_enabled' => $connection?->schedule_enabled ?? false, 'retention_days' => $connection?->retention_days ?? 30,

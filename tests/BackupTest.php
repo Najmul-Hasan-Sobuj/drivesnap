@@ -10,6 +10,8 @@ use DriveSnap\Models\Connection;
 use DriveSnap\Snapshot;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
 class BackupTest extends TestCase
@@ -44,6 +46,54 @@ class BackupTest extends TestCase
         $this->assertNotSame('sensitive-test-refresh', DB::table('drivesnap_connections')->value('refresh_token'));
         $this->assertArrayNotHasKey('refresh_token', $connection->toArray());
         $this->assertArrayNotHasKey('upload_url', $backup->toArray());
+    }
+
+    public function test_backup_locations_require_download_access_and_only_expose_project_relative_paths(): void
+    {
+        Http::preventStrayRequests();
+        Connection::current()->update(['folder_id' => 'folder_123']);
+        $backup = Backup::create(['status' => 'completed', 'drive_file_id' => 'file_123']);
+        $backup->update(['path' => 'backups/'.$backup->id.'.enc']);
+        Storage::disk('drivesnap')->put($backup->path, 'encrypted-fixture');
+
+        $this->actingAs($this->actor('viewer'))->getJson('/drivesnap/status')->assertOk()
+            ->assertJsonPath('backups.data.0.local_path', null)
+            ->assertJsonPath('backups.data.0.drive_url', null)
+            ->assertJsonPath('connection.folder_url', null)
+            ->assertDontSee('folder_123')->assertDontSee('file_123');
+        $this->actingAs($this->actor())->getJson('/drivesnap/status')->assertOk()
+            ->assertJsonPath('backups.data.0.local_path', 'storage/app/private/drivesnap/'.$backup->path)
+            ->assertJsonPath('backups.data.0.drive_url', 'https://drive.google.com/file/d/file_123/view')
+            ->assertJsonPath('connection.folder_url', 'https://drive.google.com/drive/folders/folder_123')
+            ->assertDontSee(Storage::disk('drivesnap')->path($backup->path));
+
+        config(['drivesnap.abilities.download' => 'downloadBackups']);
+        Gate::define('downloadBackups', fn (): bool => false);
+        $this->getJson('/drivesnap/status')->assertOk()->assertJsonPath('can.manage', true)
+            ->assertJsonPath('backups.data.0.local_path', null)->assertJsonPath('backups.data.0.drive_url', null)
+            ->assertJsonPath('connection.folder_url', null);
+    }
+
+    public function test_missing_local_archives_and_incomplete_uploads_are_not_presented_as_available_locations(): void
+    {
+        $backup = Backup::create(['status' => 'completed', 'drive_file_id' => 'file_123']);
+        $backup->update(['path' => 'backups/'.$backup->id.'.enc']);
+        $this->actingAs($this->actor())->getJson('/drivesnap/status')->assertOk()
+            ->assertJsonPath('backups.data.0.local', false)->assertJsonPath('backups.data.0.local_path', null)
+            ->assertJsonPath('backups.data.0.drive_url', 'https://drive.google.com/file/d/file_123/view');
+        Storage::disk('drivesnap')->put($backup->path, 'encrypted-fixture');
+        $backup->update(['status' => 'uploading']);
+        $this->getJson('/drivesnap/status')->assertOk()
+            ->assertJsonPath('backups.data.0.local_path', null)->assertJsonPath('backups.data.0.drive_url', null);
+    }
+
+    public function test_location_metadata_cannot_expose_arbitrary_private_paths_or_change_the_drive_link_origin(): void
+    {
+        $backup = Backup::create(['status' => 'completed', 'path' => 'tmp/private-file', 'drive_file_id' => 'file/../../evil?redirect=https://evil.test']);
+        Storage::disk('drivesnap')->put($backup->path, 'private-fixture');
+        $this->actingAs($this->actor())->getJson('/drivesnap/status')->assertOk()
+            ->assertJsonPath('backups.data.0.local_path', null)->assertDontSee('tmp/private-file')
+            ->assertJsonPath('backups.data.0.drive_url', 'https://drive.google.com/file/d/'.rawurlencode($backup->drive_file_id).'/view');
     }
 
     public function test_pagination_and_settings_validation_are_real_server_contracts(): void

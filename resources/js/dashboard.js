@@ -41,16 +41,18 @@ export function mountDashboard(root, initial) {
                 <div class="ds-table-scroll"><table><thead><tr><th>Snapshot</th><th>Status</th><th>Size</th><th>Storage</th><th><span class="ds-sr-only">Actions</span></th></tr></thead><tbody data-rows></tbody></table></div>
                 <div class="ds-empty" data-empty>${shield}<h3>Your first backup starts here</h3><p>Create a local snapshot, or connect Google Drive for an off-site copy.</p><button class="ds-button ds-secondary" data-action="new">Create a backup</button></div>
                 <footer class="ds-pagination"><span data-range></span><div><button class="ds-button ds-secondary" data-action="previous">← Previous</button><span data-page></span><button class="ds-button ds-secondary" data-action="next">Next →</button></div></footer></section>
-                <aside class="ds-sidebar"><section class="ds-card"><div class="ds-card-title"><span class="ds-cloud">☁</span><h2>Google Drive</h2><span class="ds-pill" data-connection-label>Not connected</span></div><p data-account>Keep an encrypted copy outside your server.</p><p class="ds-muted" data-setup></p><button class="ds-button ds-secondary ds-full" data-action="connect">Connect Google Drive ↗</button><button class="ds-text-button" data-action="disconnect" hidden>Disconnect account</button></section>
+                <aside class="ds-sidebar"><section class="ds-card"><div class="ds-card-title"><span class="ds-cloud">☁</span><h2>Google Drive</h2><span class="ds-pill" data-connection-label>Not connected</span></div><p data-account>Keep an encrypted copy outside your server.</p><p class="ds-muted" data-setup></p><button class="ds-button ds-secondary ds-full" data-action="connect">Connect Google Drive ↗</button><a class="ds-button ds-secondary ds-full" data-drive-folder target="_blank" rel="noopener noreferrer" hidden>Open Drive folder ↗</a><button class="ds-text-button" data-action="disconnect" hidden>Disconnect account</button></section>
                 <section class="ds-card"><h2>Automatic backups</h2><p class="ds-muted" data-schedule-time></p><form data-settings><label class="ds-switch-row"><span>Enable daily backups</span><input type="checkbox" name="schedule_enabled" role="switch"></label><label class="ds-field" data-binary-field>Backup tool<select name="binary_key"></select><small>Only server-approved tools can be selected.</small></label><label class="ds-field">Keep backups for<select name="retention_days"><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option><option value="180">180 days</option><option value="365">365 days</option></select></label><p class="ds-footnote" data-settings-dirty role="status" hidden>Unsaved changes</p><p class="ds-footnote">The newest completed backup is kept when retention runs.</p><button class="ds-button ds-secondary ds-full" type="submit">Save settings</button></form></section>
                 <div class="ds-assurance">${shield}<p><strong>Encrypted before upload</strong><br>Only encrypted archives are sent to Drive. Keep your encryption key somewhere safe.</p></div></aside></div>
         </div>
         <dialog class="ds-dialog" data-create aria-labelledby="ds-create-title"><form><div class="ds-dialog-body"><span class="ds-dialog-icon">${shield}</span><h2 id="ds-create-title">Create a backup</h2><p>Capture your database now. Your application stays available.</p><label class="ds-choice"><input type="radio" name="destination" value="local" checked><span><strong>Local only</strong><small>A private encrypted copy on this server.</small></span></label><label class="ds-choice"><input type="radio" name="destination" value="drive"><span><strong>Local + Google Drive</strong><small>An encrypted copy in both locations.</small></span></label><p class="ds-footnote">Includes database tables and data. Application files and uploads are separate.</p></div><footer><button type="button" class="ds-button ds-secondary" data-action="close">Cancel</button><button class="ds-button ds-primary" type="submit">Create backup</button></footer></form></dialog>
+        <dialog class="ds-dialog" data-locations aria-labelledby="ds-locations-title"><div class="ds-dialog-body"><h2 id="ds-locations-title">Backup locations</h2><p data-location-name></p><section class="ds-location-card"><h3>On this server</h3><p data-local-status></p><div data-local-path hidden><label class="ds-field">Path from your Laravel project<input data-location-path readonly spellcheck="false"></label><button class="ds-button ds-secondary" data-action="copy-path" type="button">Copy path</button></div><p class="ds-footnote">This is server storage. Your browser cannot open it as a folder on your computer.</p></section><section class="ds-location-card"><h3>Google Drive</h3><p data-drive-status></p><div class="ds-location-actions"><a class="ds-button ds-secondary" data-drive-file target="_blank" rel="noopener noreferrer" hidden>Open Drive file ↗</a><a class="ds-button ds-secondary" data-location-folder target="_blank" rel="noopener noreferrer" hidden>Open Drive folder ↗</a></div><p class="ds-footnote">Use the Google account that owns this backup. Encrypted archives have no document preview.</p></section><p class="ds-footnote" data-copy-status role="status" aria-live="polite"></p></div><footer><button class="ds-button ds-secondary" data-action="close" type="button">Close</button><a class="ds-button ds-primary" data-location-download>Download encrypted</a></footer></dialog>
         <dialog class="ds-dialog" data-confirm aria-labelledby="ds-confirm-title"><div class="ds-dialog-body"><h2 id="ds-confirm-title">Delete this backup?</h2><p data-confirm-description></p></div><footer><button class="ds-button ds-secondary" data-action="close">Cancel</button><button class="ds-button ds-danger" data-action="confirm">Delete backup</button></footer></dialog>
     `;
     const find = (selector) => root.querySelector(selector);
     const createDialog = find('[data-create]'),
-        confirmDialog = find('[data-confirm]');
+        confirmDialog = find('[data-confirm]'),
+        locationsDialog = find('[data-locations]');
     const date = (value) =>
         value
             ? new Date(value).toLocaleString(undefined, {
@@ -150,6 +152,10 @@ export function mountDashboard(root, initial) {
         const configuration = state.configuration;
         find('[data-binary-field]').hidden = configuration.driver === 'sqlite';
         const connection = state.connection;
+        const folderLink = find('[data-drive-folder]');
+        folderLink.hidden = !connection.folder_url;
+        if (connection.folder_url) folderLink.href = connection.folder_url;
+        else folderLink.removeAttribute('href');
         find('[data-connection-label]').textContent = connection.connected
             ? 'Connected'
             : 'Not connected';
@@ -243,9 +249,58 @@ export function mountDashboard(root, initial) {
                 [backup.local && 'Local', backup.remote && 'Drive']
                     .filter(Boolean)
                     .join(' + ') ||
-                (backup.upload_to_drive
-                    ? 'Local + Drive planned'
-                    : 'Local planned');
+                (backup.status === 'completed'
+                    ? 'Unavailable'
+                    : backup.upload_to_drive
+                      ? 'Local + Drive planned'
+                      : 'Local planned');
+            if (
+                state.can.download &&
+                backup.status === 'completed' &&
+                (backup.local || backup.remote)
+            ) {
+                const locate = document.createElement('button');
+                locate.type = 'button';
+                locate.className = 'ds-location-trigger';
+                locate.textContent = 'View locations';
+                locate.setAttribute(
+                    'aria-label',
+                    'View locations for backup ' + backup.id.slice(0, 8),
+                );
+                locate.onclick = () => {
+                    find('[data-location-name]').textContent =
+                        backup.id.slice(0, 8) + ' · ' + date(backup.created_at);
+                    find('[data-local-status]').textContent = backup.local
+                        ? 'Private encrypted copy available.'
+                        : 'No local copy. Download encrypted can retrieve the Drive copy.';
+                    find('[data-local-path]').hidden = !backup.local_path;
+                    find('[data-location-path]').value =
+                        backup.local_path ?? '';
+                    find('[data-drive-status]').textContent = backup.drive_url
+                        ? 'An encrypted copy was uploaded to Google Drive.'
+                        : 'No completed Drive copy for this backup.';
+                    for (const [selector, url] of [
+                        ['[data-drive-file]', backup.drive_url],
+                        [
+                            '[data-location-folder]',
+                            backup.drive_url
+                                ? state.connection.folder_url
+                                : null,
+                        ],
+                    ]) {
+                        const link = find(selector);
+                        link.hidden = !url;
+                        if (url) link.href = url;
+                        else link.removeAttribute('href');
+                    }
+                    find('[data-location-download]').href = endpoint(
+                        backup.download_url,
+                    );
+                    find('[data-copy-status]').textContent = '';
+                    locationsDialog.showModal();
+                };
+                storage.append(locate);
+            }
             const actions = document.createElement('td'),
                 menu = document.createElement('details'),
                 summary = document.createElement('summary');
@@ -366,6 +421,19 @@ export function mountDashboard(root, initial) {
         close: () => {
             createDialog.close();
             confirmDialog.close();
+            locationsDialog.close();
+        },
+        'copy-path': async () => {
+            const field = find('[data-location-path]');
+            field.focus();
+            field.select();
+            try {
+                await navigator.clipboard.writeText(field.value);
+                find('[data-copy-status]').textContent = 'Path copied.';
+            } catch {
+                find('[data-copy-status]').textContent =
+                    'Path selected. Copy it using your keyboard or selection menu.';
+            }
         },
         refresh: () => {
             refresh().catch((error) => notice(error.message, true));

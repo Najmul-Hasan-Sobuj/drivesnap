@@ -727,3 +727,48 @@
         padding: 16px;
     }
 }
+
+.ds-location-trigger {
+    display: block;
+    margin-top: 5px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--ds-accent);
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-size: 11px;
+    min-height: 28px;
+}
+.ds-location-card {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid var(--ds-border);
+    border-radius: 8px;
+    background: var(--ds-soft);
+}
+.ds-location-card h3 {
+    margin: 0 0 6px;
+    font-size: 14px;
+}
+.ds-location-card .ds-field {
+    margin: 12px 0;
+}
+.ds-location-card input {
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+    color: var(--ds-text);
+    border: 1px solid var(--ds-border);
+    border-radius: 6px;
+    background: var(--ds-bg);
+    font-family: monospace;
+    font-size: 12px;
+}
+.ds-location-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
