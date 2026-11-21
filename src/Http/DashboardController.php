@@ -113,7 +113,7 @@ class DashboardController
         abort_unless(is_string($backup->sha256) && hash_equals($backup->sha256, hash_file('sha256', $path)), 409, 'Archive integrity check failed.');
         event(new BackupActivity('downloaded', $backup));
 
-        return response()->download($path, $backup->id.'.'.$backup->driver.'.enc', ['Cache-Control' => 'private, no-store', 'Content-Type' => 'application/octet-stream']);
+        return response()->download($path, $backup->id.'.'.$backup->driver.'.enc', ['Cache-Control' => 'private, no-store', 'Content-Type' => 'application/octet-stream'])->setPrivate();
     }
 
     public function destroy(Request $request, Backup $backup, GoogleDrive $drive): JsonResponse

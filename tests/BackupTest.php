@@ -77,7 +77,7 @@ class BackupTest extends TestCase
         $backup = Backup::create(['status' => 'completed', 'driver' => 'sqlite', 'path' => 'backups/test.enc', 'size' => 12, 'sha256' => hash('sha256', 'test-archive')]);
         $this->actingAs($this->actor('viewer'))->get('/drivesnap/backups/'.$backup->id.'/download')->assertForbidden();
         $this->deleteJson('/drivesnap/backups/'.$backup->id)->assertForbidden();
-        $this->actingAs($this->actor())->get('/drivesnap/backups/'.$backup->id.'/download')->assertDownload($backup->id.'.sqlite.enc');
+        $this->actingAs($this->actor())->get('/drivesnap/backups/'.$backup->id.'/download')->assertDownload($backup->id.'.sqlite.enc')->assertHeader('Cache-Control', 'no-store, private');
         $this->deleteJson('/drivesnap/backups/'.$backup->id)->assertOk();
         $disk->assertMissing('backups/test.enc');
         $this->assertDatabaseMissing('drivesnap_backups', ['id' => $backup->id]);

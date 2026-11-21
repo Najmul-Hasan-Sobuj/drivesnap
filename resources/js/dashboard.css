@@ -466,6 +466,8 @@
     color: var(--ds-red);
 }
 .ds-dialog {
+    margin: auto;
+    inset: 0;
     border: 1px solid var(--ds-border);
     border-radius: 14px;
     padding: 0;
