@@ -332,8 +332,10 @@ export function mountDashboard(root, initial) {
         },
         disconnect: () => {
             selected = null;
-            find('[data-confirm-description]').textContent =
-                'Revoke this dedicated DriveSnap Google connection. Existing backup files are preserved. If you shared its OAuth client with another integration, that integration may also need to reconnect.';
+            find('[data-confirm-description]').textContent = state.connection
+                .revoke_on_disconnect
+                ? 'Revoke Google authorization for this project. All clients and integrations in the same Google project may lose access. Existing backup files are preserved.'
+                : 'Disconnect DriveSnap on this server without revoking Google authorization. Other integrations keep their access. The Google grant remains active, and existing backup files are preserved.';
             find('#ds-confirm-title').textContent = 'Disconnect Google Drive?';
             find('[data-action="confirm"]').textContent = 'Disconnect';
             confirmDialog.showModal();

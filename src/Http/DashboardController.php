@@ -57,6 +57,7 @@ class DashboardController
             'stats' => ['completed' => Backup::where('status', 'completed')->count(), 'failed' => Backup::where('status', 'failed')->count(),
                 'bytes' => (int) Backup::where('status', 'completed')->sum('size'), 'last_completed_at' => Backup::where('status', 'completed')->latest('completed_at')->value('completed_at')],
             'connection' => ['connected' => $connection?->connected() ?? false, 'email' => $connection?->email,
+                'revoke_on_disconnect' => (bool) config('drivesnap.revoke_on_disconnect', true),
                 'configured' => (bool) config('drivesnap.client_id') && (bool) config('drivesnap.client_secret'),
                 'schedule_enabled' => $connection?->schedule_enabled ?? false, 'retention_days' => $connection?->retention_days ?? 30,
                 'daily_at' => config('drivesnap.daily_at'), 'timezone' => config('drivesnap.timezone')],

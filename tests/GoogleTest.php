@@ -123,4 +123,18 @@ class GoogleTest extends TestCase
         $this->assertTrue($connection->fresh()->connected());
         $this->assertTrue($connection->fresh()->schedule_enabled);
     }
+
+    public function test_shared_google_projects_disconnect_locally_without_revoking_other_integrations(): void
+    {
+        config(['drivesnap.revoke_on_disconnect' => false]);
+        $connection = Connection::current();
+        $connection->update(['access_token' => 'access', 'refresh_token' => 'refresh', 'schedule_enabled' => true]);
+        Http::fake();
+        $this->actingAs($this->actor())->getJson('/drivesnap/status')->assertJsonPath('connection.revoke_on_disconnect', false);
+        $this->deleteJson('/drivesnap/google')->assertOk()->assertJsonPath('message', 'DriveSnap disconnected locally. Google authorization remains active for the shared project.');
+        Http::assertNothingSent();
+        $this->assertFalse($connection->fresh()->connected());
+        $this->assertNull($connection->fresh()->access_token);
+        $this->assertFalse($connection->fresh()->schedule_enabled);
+    }
 }

@@ -77,7 +77,8 @@ class GoogleConnectionController
     {
         $this->authorize($request);
         $connection = Connection::find(1);
-        if ($connection?->connected()) {
+        $revoke = (bool) config('drivesnap.revoke_on_disconnect', true);
+        if ($connection?->connected() && $revoke) {
             try {
                 $response = Http::asForm()->connectTimeout(5)->timeout(15)->post('https://oauth2.googleapis.com/revoke', ['token' => $connection->refresh_token]);
                 if (! $response->successful() && ! ($response->status() === 400 && $response->json('error') === 'invalid_token')) {
@@ -86,10 +87,12 @@ class GoogleConnectionController
             } catch (Throwable) {
                 return response()->json(['message' => 'Google could not revoke access. Please retry.'], 422);
             }
-            $connection->update(['access_token' => null, 'refresh_token' => null, 'expires_at' => null, 'schedule_enabled' => false]);
         }
+        $connection?->update(['access_token' => null, 'refresh_token' => null, 'expires_at' => null, 'schedule_enabled' => false]);
         $request->session()->forget('drivesnap.oauth');
 
-        return response()->json(['message' => 'Google Drive disconnected. Existing backups are preserved.']);
+        return response()->json(['message' => $revoke
+            ? 'Google Drive disconnected. Existing backups are preserved.'
+            : 'DriveSnap disconnected locally. Google authorization remains active for the shared project.']);
     }
 }

@@ -32,6 +32,7 @@ export type DashboardData = {
     connection: {
         connected: boolean;
         configured: boolean;
+        revoke_on_disconnect: boolean;
         email: string | null;
         schedule_enabled: boolean;
         retention_days: number;

@@ -33,12 +33,7 @@ php artisan drivesnap:install --stack=vue --page=admin/backups/Index
 
 Set `page` in `config/drivesnap.php` to the same page name. Your application's persistent layout can wrap it normally. The shared module mounts only in the browser; all adapters support SSR.
 
-If this repository has not yet been indexed on Packagist, add its public Composer VCS repository first:
-
-```bash
-composer config repositories.drivesnap vcs https://github.com/Najmul-Hasan-Sobuj/drivesnap
-composer require najmul-hasan-sobuj/drivesnap:^0.1
-```
+Available on [Packagist](https://packagist.org/packages/najmul-hasan-sobuj/drivesnap); no custom Composer repository is required.
 
 ## Authorize before opening the dashboard
 
@@ -74,7 +69,7 @@ Register these abilities with Laravel Gates or your existing permission system. 
 
 ## Connect Google Drive
 
-1. Create a **dedicated Google Cloud OAuth web client for DriveSnap**, enable the Google Drive API and configure the consent screen.
+1. Create a **separate Google Cloud project and OAuth web client for DriveSnap**, enable the Google Drive API and configure the consent screen.
 2. Add the exact absolute callback URL from your app's named `drivesnap.callback` route to authorized redirect URIs. Default: `https://your-app.example/drivesnap/google/callback`. Custom prefixes change this URL.
 3. Store the OAuth client ID and secret in your server's protected environment:
     ```dotenv
@@ -86,7 +81,9 @@ Register these abilities with Laravel Gates or your existing permission system. 
 
 DriveSnap requests `drive.file`, `openid` and `email`. It can manage files it creates, rather than your whole Drive. Offline access requires a refresh token. Google testing-mode token expiry and OAuth publishing requirements still apply; see [Google's server-side OAuth guide](https://developers.google.com/identity/protocols/oauth2/web-server) and [Drive scope guide](https://developers.google.com/workspace/drive/api/guides/api-specific-auth).
 
-Tokens are encrypted in the database and excluded from dashboard responses. A DriveSnap folder is created on the first upload. Reconnect the same account to retain access to older backups. Disconnect revokes the OAuth grant, preserves existing archives and disables the schedule. **Do not share this OAuth client with other integrations**: grant revocation can affect their access too.
+Tokens are encrypted in the database and excluded from dashboard responses. A DriveSnap folder is created on the first upload. Reconnect the same account to retain access to older backups. Disconnect revokes the OAuth grant, preserves existing archives and disables the schedule. Google revocation invalidates grants for **all OAuth clients in the same Google Cloud project**, not only DriveSnap. A separate client inside a shared project does not isolate revocation.
+
+When deliberately reusing a Google project (for example an existing Gmail integration), set `revoke_on_disconnect` to `false` in `config/drivesnap.php`. Disconnect then clears DriveSnap's encrypted local tokens and disables its schedule **without calling Google revocation**. The UI explicitly explains that the Google grant remains active. Other integrations retain their authorization. Remove the Google grant manually only when you intend to disconnect every affected integration. The default remains `true` for dedicated projects.
 
 ## Workers and automatic backups
 
