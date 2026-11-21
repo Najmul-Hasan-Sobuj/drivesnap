@@ -4,15 +4,18 @@ namespace DriveSnap\Http;
 
 use DriveSnap\Authorization;
 use DriveSnap\BackupActivity;
+use DriveSnap\BackupConfiguration;
 use DriveSnap\GoogleDrive;
 use DriveSnap\Jobs\CreateBackup;
 use DriveSnap\Models\Backup;
 use DriveSnap\Models\Connection;
+use DriveSnap\Readiness;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -55,6 +58,11 @@ class DashboardController
         $error = $request->session()->get('errors')?->first('drivesnap');
 
         return [
+            'readiness' => app(Readiness::class)->summary(),
+            'configuration' => ['binary_key' => app(BackupConfiguration::class)->selectedKey(),
+                'binaries' => collect(app(BackupConfiguration::class)->binaries())->keys()->map(fn (string $key): array => ['key' => $key, 'label' => $key === 'default' ? 'Default dump tool' : $key])->values()->all(),
+                'driver' => config('database.connections.'.(config('drivesnap.connection') ?: config('database.default')).'.driver'),
+                'dump_timeout' => app(BackupConfiguration::class)->dumpTimeout(), 'job_timeout' => app(BackupConfiguration::class)->jobTimeout()],
             'feedback' => ['message' => $error ?: $request->session()->get('success'), 'error' => filled($error)],
             'backups' => $backups,
             'stats' => ['completed' => Backup::where('status', 'completed')->count(), 'failed' => Backup::where('status', 'failed')->count(),
@@ -72,6 +80,9 @@ class DashboardController
     public function store(Request $request): JsonResponse
     {
         $this->authorize($request, 'create');
+        if ($problems = app(BackupConfiguration::class)->timeoutProblems()) {
+            return response()->json(['message' => implode(' ', $problems)], 422);
+        }
         $data = $request->validate(['upload_to_drive' => ['required', 'boolean']]);
         if ($data['upload_to_drive'] && ! Connection::find(1)?->connected()) {
             return response()->json(['message' => 'Connect Google Drive first or choose Local only.'], 422);
@@ -92,6 +103,9 @@ class DashboardController
     public function retry(Request $request, Backup $backup): JsonResponse
     {
         $this->authorize($request, 'create');
+        if ($problems = app(BackupConfiguration::class)->timeoutProblems()) {
+            return response()->json(['message' => implode(' ', $problems)], 422);
+        }
         if ($backup->status !== 'failed') {
             return response()->json(['message' => 'Only failed backups can be retried.'], 422);
         }
@@ -146,7 +160,8 @@ class DashboardController
     public function settings(Request $request): JsonResponse
     {
         $this->authorize($request, 'manage');
-        $data = $request->validate(['schedule_enabled' => ['required', 'boolean'], 'retention_days' => ['required', 'integer', 'between:1,365']]);
+        $data = $request->validate(['schedule_enabled' => ['required', 'boolean'], 'retention_days' => ['required', 'integer', 'between:1,365'],
+            'binary_key' => ['sometimes', 'required', 'string', Rule::in(array_keys(app(BackupConfiguration::class)->binaries()))]]);
         Connection::current()->update($data);
 
         return response()->json(['message' => 'Backup settings saved.']);

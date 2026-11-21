@@ -16,22 +16,23 @@ class InstallAndRetentionTest extends TestCase
     public function test_repeated_installation_does_not_duplicate_schema_or_overwrite_ui(): void
     {
         $directory = database_path('migrations');
-        $before = glob($directory.'/*_create_drivesnap_tables.php') ?: [];
+        $before = glob($directory.'/*drivesnap*.php') ?: [];
         try {
             $this->artisan('drivesnap:install', ['--stack' => 'vue', '--page' => 'admin/backups/Index'])->assertSuccessful();
             $configuration = file_get_contents(config_path('drivesnap.php'));
             $this->artisan('drivesnap:install', ['--stack' => 'vue', '--page' => 'admin/backups/Index', '--force' => true])->assertSuccessful();
             $this->assertSame($configuration, file_get_contents(config_path('drivesnap.php')));
-            $first = glob($directory.'/*_create_drivesnap_tables.php');
+            $first = glob($directory.'/*drivesnap*.php');
             $this->artisan('drivesnap:install', ['--stack' => 'vue', '--page' => 'admin/backups/Index'])->assertSuccessful();
-            $this->assertCount(1, $first);
-            $this->assertSame($first, glob($directory.'/*_create_drivesnap_tables.php'));
+            $this->assertCount(count(glob(__DIR__.'/../database/migrations/*.php')), $first);
+            $this->assertStringContainsString('_create_drivesnap_tables.php', basename($first[0]));
+            $this->assertSame($first, glob($directory.'/*drivesnap*.php'));
             $page = file_get_contents(resource_path('js/pages/admin/backups/Index.vue'));
             $this->assertStringContainsString('../../../drivesnap/dashboard.js', $page);
             $this->assertStringContainsString('../../../drivesnap/dashboard.css', $page);
             $this->artisan('drivesnap:install', ['--page' => '../outside'])->assertFailed();
         } finally {
-            foreach (array_diff(glob($directory.'/*_create_drivesnap_tables.php') ?: [], $before) as $file) {
+            foreach (array_diff(glob($directory.'/*drivesnap*.php') ?: [], $before) as $file) {
                 unlink($file);
             }
         }

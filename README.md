@@ -17,13 +17,13 @@ This is an administrator tool: authorized downloads contain the **entire configu
 ## Install
 
 ```bash
-composer require najmul-hasan-sobuj/drivesnap:^0.1
+composer require najmul-hasan-sobuj/drivesnap:^0.2
 php artisan drivesnap:install --stack=vue
 php artisan migrate
 npm run build
 ```
 
-Choose `--stack=react` or `--stack=svelte` for your app. The installer publishes an Inertia page, a shared dashboard module/style, configuration and one migration. It preserves existing files. Your Inertia resolver must load `resources/js/pages`; adjust its resolver if your app uses a different directory.
+Choose `--stack=react` or `--stack=svelte` for your app. The installer publishes an Inertia page, a shared dashboard module/style, configuration and migrations. It preserves existing files. Your Inertia resolver must load `resources/js/pages`; adjust its resolver if your app uses a different directory.
 
 For nested admin pages:
 
@@ -66,6 +66,43 @@ Custom admin guards and separate permissions are supported:
 ```
 
 Register these abilities with Laravel Gates or your existing permission system. Every action requires view access plus its own ability. Queued requests recheck the requester's current permission before running. Inactive users with an `is_active` attribute are refused. CLI/scheduled backups run as trusted server operations.
+
+## Readiness and approved dump tools
+
+Run the server-side checks after installation and whenever runtime configuration changes:
+
+```bash
+php artisan drivesnap:doctor
+php artisan drivesnap:doctor --json
+```
+
+Doctor checks the approved executable/version (MySQL/MariaDB), source and metadata database connectivity, private storage read/write access, cache/atomic locks, timeout budgets and Google Drive API connectivity when connected. It returns a non-zero exit code for failed checks and caches a sanitized report for one hour. Database connectivity is not proof of dump privileges: complete a real backup and isolated restore as well.
+
+The dashboard shows that report and the latest worker/scheduler heartbeats. It never runs an executable or calls Google just because someone opens or polls the page. **Not checked** and missing/stale heartbeat warnings are intentionally different from a verified successful check. Heartbeats are recent observations, not proof that a daemon will stay running. All servers must use the same cache store and private archive storage where applicable.
+
+`queue:work` emits idle-worker signals for the configured backup queue. `queue:listen` / `--once` only produce a signal when processing a job; an idle listener can therefore have no recent signal. A lightweight scheduled cache heartbeat runs every minute; configure Laravel's scheduler normally. This heartbeat does not enable automatic database backups.
+
+By default the dump tool comes from `DRIVESNAP_DUMP_BINARY` / `backup_binary`. Server operators can add approved choices in `config/drivesnap.php`:
+
+```php
+'binaries' => [
+    'MySQL 8.4' => '/usr/local/mysql/bin/mysqldump',
+    'MariaDB' => '/usr/local/bin/mariadb-dump',
+],
+```
+
+These are examples: use existing executable paths on your own server. The dashboard stores only the selected **key**, never a browser-supplied executable path. Only users with the manage ability can select a tool. Full paths and provider diagnostics are not returned to the dashboard. The default choice continues to use `backup_binary`, and SQLite needs no external tool. After a selection change, rerun Doctor to verify the new choice. Restart long-lived workers after changing server configuration.
+
+### Larger database timeouts
+
+```dotenv
+DRIVESNAP_DUMP_TIMEOUT=120
+DRIVESNAP_JOB_TIMEOUT=300
+```
+
+The dump timeout must be 1–3600 seconds; the job timeout must be 30–7200 seconds and leave **more than 30 seconds** beyond the dump budget for encryption/upload. For queue connections exposing `retry_after`, it must exceed the job timeout. Unsafe configurations are reported by Doctor and refused before a new backup is queued. The snapshot engine also checks the budget before taking a snapshot.
+
+For example, a 600-second dump budget can use a 900-second job budget and `retry_after=960`. Configure your worker/listener process timeout, process monitor termination grace period and SQS visibility timeout to match; Doctor cannot inspect external process-manager/SQS settings. Uploads must still fit within the total job budget; larger archives may resume on retry. SQLite ignores the external binary choice.
 
 ## Connect Google Drive
 
@@ -148,7 +185,7 @@ Actions include requested, retried, completed, failed, downloaded and deleted. B
 
 ## Upgrades and customization
 
-Run migrations normally after upgrading. To refresh published UI assets:
+After upgrading, run `php artisan drivesnap:install` with your existing stack/page options to publish any missing upgrade migrations, then run `php artisan migrate`. Existing configuration, original migration files, backups and Google credentials are preserved. To refresh published UI assets:
 
 ```bash
 php artisan drivesnap:install --stack=vue --page=admin/backups/Index --force

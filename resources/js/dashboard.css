@@ -626,3 +626,104 @@
 .ds-table-scroll:has(details[open]) {
     padding-bottom: 150px;
 }
+
+.ds-readiness {
+    border: 1px solid var(--ds-border);
+    border-radius: 12px;
+    background: var(--ds-bg);
+    margin-bottom: 24px;
+}
+.ds-readiness summary {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+}
+.ds-readiness summary::-webkit-details-marker {
+    display: none;
+}
+.ds-readiness-summary {
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--ds-muted);
+    font-weight: 450;
+}
+.ds-readiness-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1px;
+    background: var(--ds-border);
+    border-top: 1px solid var(--ds-border);
+}
+.ds-readiness-item {
+    padding: 16px 20px;
+    background: var(--ds-bg);
+    min-width: 0;
+}
+.ds-readiness-item > div {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+}
+.ds-readiness-item strong {
+    font-size: 12px;
+    font-weight: 600;
+}
+.ds-readiness-item p,
+.ds-readiness-item small {
+    font-size: 11px;
+    color: var(--ds-muted);
+    margin-top: 8px;
+    display: block;
+    overflow-wrap: anywhere;
+}
+.ds-readiness-badge {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: var(--ds-soft);
+    color: var(--ds-muted);
+}
+.ds-readiness-badge[data-status='ok'] {
+    background: var(--ds-accent-soft);
+    color: var(--ds-accent);
+}
+.ds-readiness-badge[data-status='error'] {
+    color: var(--ds-red);
+}
+.ds-readiness-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    justify-content: space-between;
+    padding: 12px 20px;
+    color: var(--ds-muted);
+    font-size: 11px;
+}
+.ds-readiness-footer code {
+    user-select: all;
+    color: var(--ds-text);
+}
+.ds-field small {
+    font-size: 11px;
+    color: var(--ds-muted);
+    font-weight: 400;
+}
+@media (max-width: 1100px) {
+    .ds-readiness-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 640px) {
+    .ds-readiness-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .ds-readiness summary {
+        padding: 16px;
+    }
+}

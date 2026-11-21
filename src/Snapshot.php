@@ -17,6 +17,9 @@ class Snapshot
         if (! in_array($driver, ['sqlite', 'mysql', 'mariadb'], true)) {
             throw new RuntimeException('Supported database drivers: MySQL, MariaDB and SQLite.');
         }
+        $configuration = app(BackupConfiguration::class);
+        $configuration->validateTimeouts();
+        $binary = $driver === 'sqlite' ? null : $configuration->binary();
         $disk = Storage::disk('drivesnap');
         $disk->makeDirectory('tmp');
         $disk->makeDirectory('backups');
@@ -51,7 +54,7 @@ class Snapshot
                     }
                 }
                 file_put_contents($credentials, $options);
-                $result = Process::timeout(120)->run([config('drivesnap.backup_binary'), '--defaults-extra-file='.$credentials, '--single-transaction', '--skip-lock-tables', '--no-tablespaces', '--hex-blob', '--result-file='.$temporary, '--', $connection->getDatabaseName()]);
+                $result = Process::timeout($configuration->dumpTimeout())->run([$binary, '--defaults-extra-file='.$credentials, '--single-transaction', '--skip-lock-tables', '--no-tablespaces', '--hex-blob', '--result-file='.$temporary, '--', $connection->getDatabaseName()]);
                 if (! $result->successful()) {
                     throw new RuntimeException('Database snapshot failed. Check dump binary and database privileges.');
                 }

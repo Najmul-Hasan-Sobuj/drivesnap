@@ -27,6 +27,7 @@ export function mountDashboard(root, initial) {
         busy = false,
         page = initial.backups.current_page,
         selected = null;
+    let settingsDirty = false;
     const abort = new AbortController();
     const shield =
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 3 4 6v6c0 5 8 9 8 9s8-4 8-9V6z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>';
@@ -35,12 +36,13 @@ export function mountDashboard(root, initial) {
             <header class="ds-header"><div><div class="ds-eyebrow"><span class="ds-brand-icon">${shield}</span>DRIVESNAP <span class="ds-version">DATABASE BACKUPS</span></div><h1>Keep a safe copy.</h1><p>Encrypted database snapshots, close at hand and safely off site.</p></div><button class="ds-button ds-primary" data-action="new">＋ New backup</button></header>
             <div class="ds-notice" role="status" aria-live="polite" data-notice hidden></div>
             <div class="ds-stats"><article><span class="ds-stat-label">Completed backups</span><strong data-stat="completed">0</strong><span>Ready when you need them</span></article><article><span class="ds-stat-label">Archive size</span><strong data-stat="bytes">0 B</strong><span>Encrypted snapshots</span></article><article><span class="ds-stat-label">Last successful backup</span><strong class="ds-date-stat" data-stat="last">Not yet</strong><span data-stat="failed">No failed backups</span></article></div>
+            <details class="ds-readiness" open><summary><span>Backup readiness</span><span class="ds-readiness-summary" data-readiness-summary>Not checked</span><span aria-hidden="true">⌄</span></summary><div class="ds-readiness-grid" data-readiness></div><div class="ds-readiness-footer"><span data-doctor-checked>Not checked yet.</span><span>Server checks: <code>php artisan drivesnap:doctor</code></span></div></details>
             <div class="ds-workspace"><section class="ds-history"><div class="ds-section-head"><div><h2>Backup history</h2><p>A record of every snapshot.</p></div><button class="ds-button ds-secondary" data-action="refresh">↻ Refresh</button></div>
                 <div class="ds-table-scroll"><table><thead><tr><th>Snapshot</th><th>Status</th><th>Size</th><th>Storage</th><th><span class="ds-sr-only">Actions</span></th></tr></thead><tbody data-rows></tbody></table></div>
                 <div class="ds-empty" data-empty>${shield}<h3>Your first backup starts here</h3><p>Create a local snapshot, or connect Google Drive for an off-site copy.</p><button class="ds-button ds-secondary" data-action="new">Create a backup</button></div>
                 <footer class="ds-pagination"><span data-range></span><div><button class="ds-button ds-secondary" data-action="previous">← Previous</button><span data-page></span><button class="ds-button ds-secondary" data-action="next">Next →</button></div></footer></section>
                 <aside class="ds-sidebar"><section class="ds-card"><div class="ds-card-title"><span class="ds-cloud">☁</span><h2>Google Drive</h2><span class="ds-pill" data-connection-label>Not connected</span></div><p data-account>Keep an encrypted copy outside your server.</p><p class="ds-muted" data-setup></p><button class="ds-button ds-secondary ds-full" data-action="connect">Connect Google Drive ↗</button><button class="ds-text-button" data-action="disconnect" hidden>Disconnect account</button></section>
-                <section class="ds-card"><h2>Automatic backups</h2><p class="ds-muted" data-schedule-time></p><form data-settings><label class="ds-switch-row"><span>Enable daily backups</span><input type="checkbox" name="schedule_enabled" role="switch"></label><label class="ds-field">Keep backups for<select name="retention_days"><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option><option value="180">180 days</option><option value="365">365 days</option></select></label><p class="ds-footnote">The newest completed backup is kept when retention runs.</p><button class="ds-button ds-secondary ds-full" type="submit">Save settings</button></form></section>
+                <section class="ds-card"><h2>Automatic backups</h2><p class="ds-muted" data-schedule-time></p><form data-settings><label class="ds-switch-row"><span>Enable daily backups</span><input type="checkbox" name="schedule_enabled" role="switch"></label><label class="ds-field" data-binary-field>Backup tool<select name="binary_key"></select><small>Only server-approved tools can be selected.</small></label><label class="ds-field">Keep backups for<select name="retention_days"><option value="7">7 days</option><option value="14">14 days</option><option value="30">30 days</option><option value="60">60 days</option><option value="90">90 days</option><option value="180">180 days</option><option value="365">365 days</option></select></label><p class="ds-footnote" data-settings-dirty role="status" hidden>Unsaved changes</p><p class="ds-footnote">The newest completed backup is kept when retention runs.</p><button class="ds-button ds-secondary ds-full" type="submit">Save settings</button></form></section>
                 <div class="ds-assurance">${shield}<p><strong>Encrypted before upload</strong><br>Only encrypted archives are sent to Drive. Keep your encryption key somewhere safe.</p></div></aside></div>
         </div>
         <dialog class="ds-dialog" data-create aria-labelledby="ds-create-title"><form><div class="ds-dialog-body"><span class="ds-dialog-icon">${shield}</span><h2 id="ds-create-title">Create a backup</h2><p>Capture your database now. Your application stays available.</p><label class="ds-choice"><input type="radio" name="destination" value="local" checked><span><strong>Local only</strong><small>A private encrypted copy on this server.</small></span></label><label class="ds-choice"><input type="radio" name="destination" value="drive"><span><strong>Local + Google Drive</strong><small>An encrypted copy in both locations.</small></span></label><p class="ds-footnote">Includes database tables and data. Application files and uploads are separate.</p></div><footer><button type="button" class="ds-button ds-secondary" data-action="close">Cancel</button><button class="ds-button ds-primary" type="submit">Create backup</button></footer></form></dialog>
@@ -92,6 +94,44 @@ export function mountDashboard(root, initial) {
             );
         return payload;
     }
+    function renderReadiness() {
+        const panel = find('[data-readiness]');
+        panel.replaceChildren();
+        for (const check of state.readiness.checks) {
+            const item = document.createElement('article');
+            item.className = 'ds-readiness-item';
+            const header = document.createElement('div');
+            const label = document.createElement('strong');
+            label.textContent = check.label;
+            const badge = document.createElement('span');
+            badge.className = 'ds-readiness-badge';
+            badge.dataset.status = check.status;
+            badge.textContent =
+                check.status === 'ok'
+                    ? 'Ready'
+                    : check.status === 'error'
+                      ? 'Action needed'
+                      : 'Check';
+            header.append(label, badge);
+            const message = document.createElement('p');
+            message.textContent = check.message;
+            item.append(header, message);
+            if (check.last_seen_at) {
+                const seen = document.createElement('small');
+                seen.textContent = 'Last seen: ' + date(check.last_seen_at);
+                item.append(seen);
+            }
+            panel.append(item);
+        }
+        const ready = state.readiness.checks.filter(
+            (check) => check.status === 'ok',
+        ).length;
+        find('[data-readiness-summary]').textContent =
+            ready + ' / ' + state.readiness.checks.length + ' ready';
+        find('[data-doctor-checked]').textContent = state.readiness.checked_at
+            ? 'Server checked: ' + date(state.readiness.checked_at)
+            : 'Server checks have not run yet.';
+    }
     function render() {
         if (disposed) return;
         find('[data-stat="completed"]').textContent = String(
@@ -106,6 +146,9 @@ export function mountDashboard(root, initial) {
         find('[data-stat="failed"]').textContent = state.stats.failed
             ? state.stats.failed + ' failed · retry from the history below'
             : 'No failed backups';
+        renderReadiness();
+        const configuration = state.configuration;
+        find('[data-binary-field]').hidden = configuration.driver === 'sqlite';
         const connection = state.connection;
         find('[data-connection-label]').textContent = connection.connected
             ? 'Connected'
@@ -129,20 +172,32 @@ export function mountDashboard(root, initial) {
             ' (' +
             connection.timezone +
             '). Uses Google Drive when connected; otherwise local storage.';
-        find('[name="schedule_enabled"]').checked = connection.schedule_enabled;
-        const retention = find('[name="retention_days"]');
-        if (
-            ![...retention.options].some(
-                (option) => option.value === String(connection.retention_days),
+        if (!settingsDirty) {
+            find('[name="schedule_enabled"]').checked =
+                connection.schedule_enabled;
+            const retention = find('[name="retention_days"]');
+            if (
+                ![...retention.options].some(
+                    (option) =>
+                        option.value === String(connection.retention_days),
+                )
             )
-        )
-            retention.add(
-                new Option(
-                    connection.retention_days + ' days',
-                    String(connection.retention_days),
+                retention.add(
+                    new Option(
+                        connection.retention_days + ' days',
+                        String(connection.retention_days),
+                    ),
+                );
+            retention.value = String(connection.retention_days);
+            const tools = find('[name="binary_key"]');
+            tools.replaceChildren(
+                ...configuration.binaries.map(
+                    (tool) => new Option(tool.label, tool.key),
                 ),
             );
-        retention.value = String(connection.retention_days);
+            tools.value = configuration.binary_key;
+        }
+        find('[data-settings-dirty]').hidden = !settingsDirty;
         find('[data-settings]').hidden = !state.can.manage;
         find('[value="drive"]').disabled = !connection.connected;
         root.querySelectorAll('[data-action="new"]').forEach((button) => {
@@ -365,14 +420,23 @@ export function mountDashboard(root, initial) {
             }),
         );
     });
+    find('[data-settings]').addEventListener('input', () => {
+        settingsDirty = true;
+        find('[data-settings-dirty]').hidden = false;
+    });
     find('[data-settings]').addEventListener('submit', (event) => {
         event.preventDefault();
-        void perform(() =>
-            request(state.endpoints.settings, 'PUT', {
+        void perform(async () => {
+            const result = await request(state.endpoints.settings, 'PUT', {
                 schedule_enabled: find('[name="schedule_enabled"]').checked,
                 retention_days: Number(find('[name="retention_days"]').value),
-            }),
-        );
+                ...(state.configuration.driver !== 'sqlite'
+                    ? { binary_key: find('[name="binary_key"]').value }
+                    : {}),
+            });
+            settingsDirty = false;
+            return result;
+        });
     });
     render();
     if (initial.feedback?.message) {
@@ -382,7 +446,7 @@ export function mountDashboard(root, initial) {
         if (
             !document.hidden &&
             !busy &&
-            !root.querySelector('dialog[open], details[open]') &&
+            !root.querySelector('dialog[open], [data-rows] details[open]') &&
             !(
                 root.contains(document.activeElement) &&
                 ['INPUT', 'SELECT'].includes(document.activeElement.tagName)

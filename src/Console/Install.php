@@ -20,8 +20,15 @@ class Install extends Command
             return self::FAILURE;
         }
         $this->call('vendor:publish', ['--tag' => ['drivesnap-config'], '--no-interaction' => true]);
-        if (glob(database_path('migrations/*_create_drivesnap_tables.php')) === []) {
-            $this->call('vendor:publish', ['--tag' => ['drivesnap-migrations'], '--no-interaction' => true]);
+        $migrationTags = [];
+        foreach (glob(__DIR__.'/../../database/migrations/*.php') as $migration) {
+            $name = substr(basename($migration), 18);
+            if (glob(database_path('migrations/*_'.$name)) === []) {
+                $migrationTags[] = 'drivesnap-migration-'.$name;
+            }
+        }
+        if ($migrationTags !== []) {
+            $this->call('vendor:publish', ['--tag' => $migrationTags, '--no-interaction' => true]);
         }
         $extension = ['vue' => 'vue', 'react' => 'jsx', 'svelte' => 'svelte'][$stack];
         $files = [

@@ -4,6 +4,7 @@ namespace DriveSnap\Jobs;
 
 use DriveSnap\Authorization;
 use DriveSnap\BackupActivity;
+use DriveSnap\BackupConfiguration;
 use DriveSnap\GoogleDrive;
 use DriveSnap\Models\Backup;
 use DriveSnap\Snapshot;
@@ -28,6 +29,8 @@ class CreateBackup implements ShouldBeEncrypted, ShouldBeUnique, ShouldQueue
 
     public function __construct(public string $backupId)
     {
+        $this->timeout = max(1, app(BackupConfiguration::class)->jobTimeout());
+        $this->uniqueFor = max(1800, ($this->timeout + 120) * $this->tries + 300);
         $this->onQueue(config('drivesnap.queue'));
         $this->afterCommit();
     }
@@ -44,7 +47,7 @@ class CreateBackup implements ShouldBeEncrypted, ShouldBeUnique, ShouldQueue
 
     public function middleware(): array
     {
-        return [(new WithoutOverlapping($this->backupId))->withPrefix('drivesnap:backup:')->shared()->releaseAfter(15)->expireAfter(360)];
+        return [(new WithoutOverlapping($this->backupId))->withPrefix('drivesnap:backup:')->shared()->releaseAfter(15)->expireAfter($this->timeout + 60)];
     }
 
     public function handle(Snapshot $snapshot, GoogleDrive $drive): void

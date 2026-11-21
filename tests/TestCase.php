@@ -37,7 +37,9 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
-        (require __DIR__.'/../database/migrations/2026_11_21_000000_create_drivesnap_tables.php')->up();
+        foreach (glob(__DIR__.'/../database/migrations/*.php') as $migration) {
+            (require $migration)->up();
+        }
         Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');

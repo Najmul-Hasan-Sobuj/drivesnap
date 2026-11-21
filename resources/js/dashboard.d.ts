@@ -15,6 +15,23 @@ export type BackupRow = {
     retry_url: string;
 };
 export type DashboardData = {
+    readiness: {
+        checked_at: string | null;
+        checks: {
+            key: string;
+            label: string;
+            status: 'ok' | 'warning' | 'error';
+            message: string;
+            last_seen_at?: string | null;
+        }[];
+    };
+    configuration: {
+        binary_key: string;
+        binaries: { key: string; label: string }[];
+        driver: string;
+        dump_timeout: number;
+        job_timeout: number;
+    };
     feedback?: { message: string | null; error: boolean };
     backups: {
         data: BackupRow[];

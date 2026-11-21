@@ -3,6 +3,7 @@
 namespace DriveSnap\Console;
 
 use DriveSnap\BackupActivity;
+use DriveSnap\BackupConfiguration;
 use DriveSnap\Jobs\CreateBackup;
 use DriveSnap\Models\Backup;
 use DriveSnap\Models\Connection;
@@ -16,6 +17,11 @@ class RunBackup extends Command
 
     public function handle(): int
     {
+        if ($problems = app(BackupConfiguration::class)->timeoutProblems()) {
+            $this->error(implode(' ', $problems));
+
+            return self::FAILURE;
+        }
         $backup = Backup::create(['upload_to_drive' => ! $this->option('local') && (Connection::find(1)?->connected() ?? false)]);
         event(new BackupActivity('requested', $backup));
         CreateBackup::dispatch($backup->id);
