@@ -1,19 +1,68 @@
-# DriveSnap
+<p align="center">
+  <img src="resources/images/drivesnap-banner.svg" alt="DriveSnap — encrypted database backups for Laravel and Inertia" width="1280">
+</p>
 
-Encrypted database backups to Google Drive, with a dashboard for **Laravel + Inertia** applications. MIT licensed.
+<h1 align="center">DriveSnap</h1>
+<p align="center"><strong>Encrypted database backups. A dashboard your team can use.</strong><br>Keep a private local copy, add Google Drive, and manage your backups inside your Laravel Inertia application.</p>
 
-Supports Laravel 12/13, Inertia Laravel 2/3, PHP 8.3+, and Vue 3, React, or Svelte 5 page adapters. Database engines: MySQL, MariaDB, SQLite. PostgreSQL and application-file backups are not included.
+<p align="center">
+  <a href="https://packagist.org/packages/najmul-hasan-sobuj/drivesnap"><img src="https://img.shields.io/packagist/v/najmul-hasan-sobuj/drivesnap?style=flat-square&amp;color=287a52" alt="Latest stable version on Packagist"></a>
+  <a href="https://github.com/Najmul-Hasan-Sobuj/drivesnap/actions/workflows/tests.yml"><img src="https://github.com/Najmul-Hasan-Sobuj/drivesnap/actions/workflows/tests.yml/badge.svg?branch=main" alt="Tests and release workflow status"></a>
+  <a href="composer.json"><img src="https://img.shields.io/badge/PHP-8.3%2B-777BB4?style=flat-square" alt="PHP 8.3 or later"></a>
+  <a href="composer.json"><img src="https://img.shields.io/badge/Laravel-12%20%7C%2013-FF2D20?style=flat-square" alt="Laravel 12 and 13"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-287a52?style=flat-square" alt="MIT license"></a>
+</p>
+
+<p align="center">
+  <a href="#install">Install</a> · <a href="#what-you-get">Features</a> · <a href="#connect-google-drive">Google Drive setup</a> · <a href="#ide-agent-guidance">Agent skills</a> · <a href="#encryption-and-recovery">Recovery</a> · <a href="https://github.com/Najmul-Hasan-Sobuj/drivesnap/issues">Report a bug</a>
+</p>
+
+## Why DriveSnap?
+
+Give your client's administrators a clear backup workflow inside the application they already use. They can create a snapshot, see its status, find the file and download an encrypted archive without working through server commands.
+
+- **For agencies:** include a visible backup workflow in Laravel client handovers.
+- **For product teams:** add backup history and controls to an existing administrator panel.
+- **For developers:** reuse Laravel jobs, scheduling, gates and activity events with no Google SDK or frontend runtime dependency.
+
+DriveSnap is an **administrator tool for a single installation**. Archives contain the entire configured database, including sensitive tables. It is not tenant-scoped and does not back up application files or uploads.
 
 ## What you get
 
-- A responsive dashboard: history, progress, encrypted downloads, retries, deletion, daily scheduling and retention.
-- Backup locations: copy a project-relative local archive path and open its Google Drive file/folder.
-- Local encrypted copies, with optional Google Drive copies using resumable uploads.
-- Streaming XChaCha20-Poly1305 encryption and archive checksums; bounded memory for large archives.
-- Explicit server-side permissions, encrypted OAuth credentials, single-use OAuth state and private storage.
-- Native Laravel jobs, scheduling and activity events. No Google SDK or frontend runtime dependency.
+| Feature | What it helps your team do |
+| --- | --- |
+| Backup dashboard | See history, status, archive size and upload progress in one place. |
+| Local + Google Drive | Keep private encrypted local copies and optional off-site copies with resumable uploads. |
+| Encryption and integrity | Encrypt before upload with streaming XChaCha20-Poly1305 and verify archive checksums. |
+| Permissions | Separate viewing, creation, downloads, deletion and settings through your existing gates. |
+| Scheduling and retention | Enable daily backups, choose retention, and preserve the newest completed backup. |
+| File locations | Copy the local project-relative path or open the Drive file and folder. |
+| Readiness checks | Check dump tools, connectivity, storage, cache and timeout budgets with `drivesnap:doctor`. |
+| IDE agent guidance | Use bundled Laravel Boost guidelines and the portable `drivesnap-development` skill. |
 
-This is an administrator tool: authorized downloads contain the **entire configured database**, including sensitive tables. It is single-installation, not tenant-scoped.
+### How it works
+
+![DriveSnap workflow: snapshot, encrypt, store and manage](resources/images/backup-workflow.svg)
+
+**Supported:** Laravel 12/13 · Inertia Laravel 2/3 · PHP 8.3+ · Vue 3 / React / Svelte 5 · MySQL / MariaDB / SQLite. PostgreSQL is not currently supported.
+
+<details>
+<summary><strong>Documentation index</strong></summary>
+
+- [Install](#install)
+- [IDE agent guidance](#ide-agent-guidance)
+- [Authorization](#authorize-before-opening-the-dashboard)
+- [Readiness and dump tools](#readiness-and-approved-dump-tools)
+- [Google Drive setup](#connect-google-drive)
+- [Workers and automatic backups](#workers-and-automatic-backups)
+- [Find your backup files](#find-your-backup-files)
+- [Encryption and recovery](#encryption-and-recovery)
+- [Activity integration](#activity-integration)
+- [Upgrades and customization](#upgrades-and-customization)
+- [Development and verification](#development-and-verification)
+- [Security reports](#security-reports)
+
+</details>
 
 ## Install
 
@@ -233,6 +282,12 @@ Google HTTP responses are faked in automated tests. Run a real consent, upload, 
 ## Security reports
 
 For sensitive vulnerabilities, use this repository's **Security → Report a vulnerability** feature when private reporting is available, or contact the maintainer privately through their GitHub profile. Do not post tokens, database archives or encryption keys in public issues. For ordinary bugs, include framework versions and a sanitized reproduction.
+
+## Share DriveSnap
+
+Use the [branded banner](resources/images/drivesnap-banner.svg) in a client proposal, presentation or package announcement. The editable SVG keeps text sharp at different sizes. Link clients to this repository or the [Packagist listing](https://packagist.org/packages/najmul-hasan-sobuj/drivesnap) so they can review features, requirements and setup instructions.
+
+Have an integration improvement or a reproducible bug? [Open an issue](https://github.com/Najmul-Hasan-Sobuj/drivesnap/issues) or submit a pull request with the relevant test coverage. Please keep credentials, private database contents and encryption keys out of public reports.
 
 ## License
 

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" role="img" aria-labelledby="title description">
+<title id="title">The DriveSnap backup workflow</title><desc id="description">Capture a database snapshot, encrypt the archive, store it privately locally with an optional Google Drive copy, and manage history and retention in the dashboard.</desc>
+<rect width="1200" height="260" rx="16" fill="#f3f6ee"/>
+<text x="34" y="42" font-family="Arial,Helvetica,sans-serif" font-size="12" font-weight="700" letter-spacing="2" fill="#507451">FROM YOUR DATABASE TO A RECOVERABLE COPY</text>
+<g fill="none" stroke="#91ac82" stroke-width="2"><path d="M269 132h39m-7-7 7 7-7 7M563 132h39m-7-7 7 7-7 7M857 132h39m-7-7 7 7-7 7"/></g>
+<g font-family="Arial,Helvetica,sans-serif">
+<rect x="30" y="72" width="238" height="125" rx="10" fill="#fff" stroke="#d7e2cd"/>
+<text x="49" y="105" font-size="12" font-weight="700" fill="#618052">01 / SNAPSHOT</text><text x="49" y="138" font-size="18" font-weight="700" fill="#243c2b">Capture the database</text><text x="49" y="169" font-size="12" fill="#667563">Manual request or daily schedule</text>
+<rect x="324" y="72" width="238" height="125" rx="10" fill="#fff" stroke="#d7e2cd"/>
+<text x="343" y="105" font-size="12" font-weight="700" fill="#618052">02 / ENCRYPT</text><text x="343" y="138" font-size="18" font-weight="700" fill="#243c2b">Protect the archive</text><text x="343" y="169" font-size="12" fill="#667563">Streaming authenticated encryption</text>
+<rect x="618" y="72" width="238" height="125" rx="10" fill="#fff" stroke="#d7e2cd"/>
+<text x="637" y="105" font-size="12" font-weight="700" fill="#618052">03 / STORE</text><text x="637" y="138" font-size="18" font-weight="700" fill="#243c2b">Keep copies available</text><text x="637" y="169" font-size="12" fill="#667563">Private local storage + optional Drive</text>
+<rect x="912" y="72" width="258" height="125" rx="10" fill="#213d2c"/>
+<text x="931" y="105" font-size="12" font-weight="700" fill="#b7d7a5">04 / MANAGE</text><text x="931" y="138" font-size="18" font-weight="700" fill="#f1f6ed">See what happened</text><text x="931" y="169" font-size="12" fill="#c0d0b9">History, locations, retries and retention</text>
+</g>
+<text x="34" y="233" font-family="Arial,Helvetica,sans-serif" font-size="13" fill="#667563">Recovery matters: preserve your encryption key and verify a restore in an isolated database.</text>
+</svg>
