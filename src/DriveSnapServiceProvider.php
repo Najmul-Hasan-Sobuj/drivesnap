@@ -30,6 +30,7 @@ class DriveSnapServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([Install::class, RunBackup::class, Prune::class, DecryptBackup::class, Doctor::class]);
             $this->publishes([__DIR__.'/../config/drivesnap.php' => config_path('drivesnap.php')], 'drivesnap-config');
+            $this->publishes([__DIR__.'/../resources/boost/skills/drivesnap-development' => base_path('.agents/skills/drivesnap-development')], 'drivesnap-skill');
             foreach (glob(__DIR__.'/../database/migrations/*.php') as $migration) {
                 $name = substr(basename($migration), 18);
                 $this->publishesMigrations([$migration => database_path('migrations/'.basename($migration))], ['drivesnap-migrations', 'drivesnap-migration-'.$name]);

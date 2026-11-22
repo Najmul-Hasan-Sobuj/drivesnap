@@ -50,6 +50,8 @@ class Install extends Command
         }
         $this->info('DriveSnap UI published. Set drivesnap.page to '.$page.', define your authorization gates, run php artisan migrate, and rebuild your frontend.');
 
+        $this->info('Agent guidance: opt in through php artisan boost:update, or publish the portable skill with php artisan vendor:publish --tag=drivesnap-skill.');
+
         return self::SUCCESS;
     }
 }

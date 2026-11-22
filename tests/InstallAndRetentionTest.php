@@ -38,6 +38,44 @@ class InstallAndRetentionTest extends TestCase
         }
     }
 
+    public function test_portable_agent_skill_is_opt_in_and_preserves_existing_project_instructions(): void
+    {
+        $target = base_path('.agents/skills/drivesnap-development/SKILL.md');
+        $before = is_file($target) ? file_get_contents($target) : null;
+        $instructions = base_path('AGENTS.md');
+        $previousInstructions = is_file($instructions) ? file_get_contents($instructions) : null;
+        try {
+            if (is_file($target)) {
+                unlink($target);
+            }
+            file_put_contents($instructions, 'Existing project instructions');
+            $this->artisan('drivesnap:install')->assertSuccessful();
+            $this->assertFileDoesNotExist($target);
+            $this->artisan('vendor:publish', ['--tag' => 'drivesnap-skill'])->assertSuccessful();
+            $source = file_get_contents(__DIR__.'/../resources/boost/skills/drivesnap-development/SKILL.md');
+            $this->assertSame($source, file_get_contents($target));
+            $this->assertSame('Existing project instructions', file_get_contents($instructions));
+            file_put_contents($target, 'Customized skill');
+            $this->artisan('vendor:publish', ['--tag' => 'drivesnap-skill'])->assertSuccessful();
+            $this->assertSame('Customized skill', file_get_contents($target));
+            $this->artisan('vendor:publish', ['--tag' => 'drivesnap-skill', '--force' => true])->assertSuccessful();
+            $this->assertSame($source, file_get_contents($target));
+        } finally {
+            if ($before === null) {
+                if (is_file($target)) {
+                    unlink($target);
+                }
+            } else {
+                file_put_contents($target, $before);
+            }
+            if ($previousInstructions === null) {
+                unlink($instructions);
+            } else {
+                file_put_contents($instructions, $previousInstructions);
+            }
+        }
+    }
+
     public function test_retention_keeps_the_last_completed_backup_even_when_it_is_old(): void
     {
         $disk = Storage::disk('drivesnap');

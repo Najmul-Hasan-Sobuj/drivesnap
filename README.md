@@ -36,6 +36,22 @@ Set `page` in `config/drivesnap.php` to the same page name. Your application's p
 
 Available on [Packagist](https://packagist.org/packages/najmul-hasan-sobuj/drivesnap); no custom Composer repository is required.
 
+## IDE agent guidance
+
+DriveSnap ships a concise Laravel Boost guideline and an on-demand `drivesnap-development` skill using the [Agent Skills format](https://agentskills.io/specification). They cover safe installation/upgrades, permissions, approved dump binaries, Google setup, encryption/recovery, workers, readiness, UI customization and activity integration.
+
+**With Laravel Boost:** after Composer installation/update, run `php artisan boost:install` for initial setup, or `php artisan boost:update` in an already configured project. Select `najmul-hasan-sobuj/drivesnap` when prompted for new package guidance and enable guidelines/skills for your agents. Boost reads `resources/boost/guidelines/core.blade.php` and `resources/boost/skills/drivesnap-development/SKILL.md` from the installed package and writes the selected agents' files. A non-interactive Composer update alone does not opt a new package into Boost guidance. See [Boost's package guidance documentation](https://laravel.com/framework/docs/boost#third-party-package-skills).
+
+**Without Boost:** publish just the portable skill, without adding a dependency:
+
+```bash
+php artisan vendor:publish --tag=drivesnap-skill
+```
+
+This writes `.agents/skills/drivesnap-development/SKILL.md`. Existing files are preserved; after an upgrade, review local customizations before explicitly republishing with `--force`. For an IDE using a different skill directory, copy that skill folder into the IDE's documented project skill location. Restart/reload the agent session if necessary, then invoke `$drivesnap-development` or ask a DriveSnap-specific question. Discovery and implicit activation depend on the IDE; installing a Composer library alone cannot guarantee every agent loads it.
+
+Package installation does not silently rewrite your project's `AGENTS.md`, editor settings, global skills or agent permissions. Boost remains optional and development-only. Keep project-specific conventions in your own instructions; use Boost's rule tooling for host-specific `.ai/rules` rather than distributing application rules as universal package requirements. Never put environment secrets or live database artifacts in an agent skill.
+
 ## Authorize before opening the dashboard
 
 Access is denied until you define the gates. For example, in your application's service provider, using **your existing administrator check**:
